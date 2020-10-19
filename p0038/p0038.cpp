@@ -1,10 +1,15 @@
 // p0038.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
-#include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 #include <vector>
 #include <map>
 #include <set>
@@ -18,11 +23,6 @@ struct Quest {
 	int cutline;
 };
 
-struct Number {
-	int index;
-	int value;
-};
-
 bool compare(int a, int b)
 {
 	return a > b;
@@ -34,111 +34,108 @@ std::map<int, std::vector<int>, std::function<bool(int, int)> > m(compare);
 void MakeTree(const std::vector<int> &numbers)
 {
 	int index = 1;
+	if (!m.empty()) {
+		m.clear();
+	}
 
 	for (const auto &num : numbers) {
-		auto iter = m.find(num);
-		if (iter != m.end()) {
-			iter->second.emplace_back(index);
+		auto it = m.find(num);
+		if (it != m.end()) {
+			it->second.emplace_back(index++);
 			continue;
 		}
 
 		std::vector<int> index_list;
-		index_list.emplace_back(index);
+		index_list.emplace_back(index++);
 
 		m.insert(std::pair<int, std::vector<int>>(num, index_list));
-		index++;
+		//index++;
 	}
 }
 
-int Solve(const std::vector<int> &numbers, const std::vector<Quest> &questions)
+int Solve(const std::vector<int> &numbers, const Quest &question)
 {
-	MakeTree(numbers);
+	//PRINT
+	//std::cout << std::endl;
+	//for (std::map<int, std::vector<int>>::iterator it = m.begin(); it != m.end(); it++) {
+	//	std::cout << it->first << ": ";
+	//	for (const auto &index : it->second) {
+	//		std::cout << index << ", ";
+	//	}
+	//	std::cout << std::endl;
+	//}
 
+	int total = 0;
 	for (std::map<int, std::vector<int>>::iterator it = m.begin(); it != m.end(); it++) {
-		std::cout << it->first << ": ";
-		for (const auto &index : it->second) {
-			std::cout << index <<", ";
+		if (it->first <= question.cutline) {
+			break;
 		}
-		std::cout << std::endl;
+
+		int sum = 0;
+		std::for_each(it->second.begin(), it->second.end(), [&question, &sum](const int index) {
+			if (index >= question.start && index <= question.end) {
+				sum += 1;
+			}
+		});
+
+		total += sum;
+
+		//PRINT
+		//std::cout << "===============" << std::endl;
+		//std::cout << it->first << ": " << sum << std::endl;
 	}
-	return 0;
+
+	//PRINT
+	//std::cout << "Total: " << total << std::endl;
+	return total;
 }
 
-bool Read(const std::string &filename)
+bool Read()
 {
-	FILE *stream;
-	freopen_s(&stream, filename.c_str(), "r", stdin);
+	freopen("sample_input.txt", "r", stdin);
 	
 	int T;
-	scanf_s("%d", &T);
+	scanf("%d", &T);
 
 	int N, Q;
 
 	std::vector<int> numbers;
 	std::vector<Quest> questions;
 
+	int T_index = 1;
+
 	while (T--) {
-		scanf_s("%d %d", &N, &Q);
+		scanf("%d %d", &N, &Q);
 
 		numbers.reserve(N);
 
 		int num;
 		while (N--) {
-			scanf_s("%d", &num);
+			scanf("%d", &num);
 			numbers.emplace_back(num);
 		}
 
-		questions.reserve(Q);
+		MakeTree(numbers);
+		
+		std::cout << "#" << T_index++;
 
 		Quest q;
 		while (Q--) {
-			scanf_s("%d %d %d", &q.start, &q.end, &q.cutline);
-			questions.emplace_back(q);
+			scanf("%d %d %d", &q.start, &q.end, &q.cutline);
+			std::cout << " " << Solve(numbers, q);
 		}
 
-		Solve(numbers, questions);
+		std::cout << std::endl;		
 		
 		numbers.clear();
 		questions.clear();
 	}
 
-	fclose(stream);
 	return true;
-}
-
-bool Write(const std::string &filename, const bool is_append)
-{
-	unsigned int mode = std::ios::out;
-	if (is_append) {
-		mode |= std::ios::app;
-	}
-
-	std::string test = "abc haha\nABC HAHA";
-
-	std::ofstream stream;
-	stream.open(filename.c_str(), mode);
-
-	stream.write(test.c_str(), test.length());
-	stream << std::endl;
-
-	stream.close();
-	return true;
-}
-
-std::string GetInputFileName()
-{
-	char path[MAX_PATH] = { 0 };
-	GetModuleFileNameA(NULL, path, _countof(path));
-	std::string::size_type pos = std::string(path).find_last_of("\\/");
-	std::string filename = std::string(path).substr(0, pos) + "\\input.txt";
-	return filename;
 }
 
 int main()
 {
-	std::string filename = GetInputFileName();
-
-	//Write(filename, true);
-	Read(filename);
+	Read();
 }
 
